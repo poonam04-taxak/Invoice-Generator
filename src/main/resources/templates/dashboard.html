@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+        .stat-card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-card .icon-box { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .table thead { background-color: #1e293b; color: #fff; }
+        .badge-paid { background-color: #16a34a; }
+        .badge-unpaid { background-color: #f59e0b; }
+        .badge-overdue { background-color: #dc2626; }
+        .card { border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark" style="background-color:#1e293b;">
+    <div class="container">
+        <span class="navbar-brand"><i class="bi bi-receipt"></i> InvoicePro</span>
+        <a href="/invoices/new" class="btn btn-warning fw-semibold">
+            <i class="bi bi-plus-circle"></i> New Invoice
+        </a>
+    </div>
+</nav>
+
+<div class="container py-4">
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box" style="background:#e0e7ff; color:#4f46e5;"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <div class="text-muted small">Total Revenue</div>
+                        <div class="fs-4 fw-bold">₹<span th:text="${totalRevenue}">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box" style="background:#dcfce7; color:#16a34a;"><i class="bi bi-file-earmark-text"></i></div>
+                    <div>
+                        <div class="text-muted small">Total Invoices</div>
+                        <div class="fs-4 fw-bold" th:text="${totalCount}">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box" style="background:#dcfce7; color:#16a34a;"><i class="bi bi-check-circle"></i></div>
+                    <div>
+                        <div class="text-muted small">Paid</div>
+                        <div class="fs-4 fw-bold" th:text="${paidCount}">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box" style="background:#fef3c7; color:#f59e0b;"><i class="bi bi-hourglass-split"></i></div>
+                    <div>
+                        <div class="text-muted small">Unpaid</div>
+                        <div class="fs-4 fw-bold" th:text="${unpaidCount}">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h5 class="fw-semibold mb-0">All Invoices</h5>
+            <div class="d-flex gap-2">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search client or invoice #..." style="width: 220px;">
+                <select id="statusFilter" class="form-select form-select-sm" style="width: 140px;">
+                    <option value="">All Status</option>
+                    <option value="PAID">Paid</option>
+                    <option value="UNPAID">Unpaid</option>
+
+                </select>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody id="invoiceTableBody">
+                <tr th:each="invoice : ${invoices}"
+                    th:data-client="${#strings.toLowerCase(invoice.client.name)}"
+                    th:data-invoice-number="${#strings.toLowerCase(invoice.invoiceNumber)}"
+                    th:data-status="${invoice.status.name()}">
+
+                    <td class="fw-semibold" th:text="${invoice.invoiceNumber}"></td>
+                    <td th:text="${invoice.client.name}"></td>
+                    <td th:text="${invoice.invoiceDate}"></td>
+                    <td th:text="${invoice.dueDate}"></td>
+                    <td>₹<span th:text="${invoice.grandTotal}"></span></td>
+                    <td>
+                        <span class="badge badge-paid" th:if="${invoice.status.name() == 'PAID'}">Paid</span>
+                        <span class="badge badge-unpaid" th:if="${invoice.status.name() == 'UNPAID'}">Unpaid</span>
+                        <span class="badge badge-overdue" th:if="${invoice.status.name() == 'OVERDUE'}">Overdue</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/invoices/{id}(id=${invoice.id})}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger" th:data-invoice-id="${invoice.id}" onclick="deleteInvoice(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(invoices)}">
+                    <td colspan="7" class="text-center text-muted py-4">No invoices yet. Create your first one!</td>
+                </tr>
+                <tr id="noResultsRow" class="d-none">
+                    <td colspan="7" class="text-center text-muted py-4">No invoices match your filters.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const tableBody = document.getElementById('invoiceTableBody');
+    const noResultsRow = document.getElementById('noResultsRow');
+
+    function applyFilters() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        const statusValue = statusFilter.value;
+        const rows = tableBody.querySelectorAll('tr[data-client]');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const client = row.getAttribute('data-client');
+            const invoiceNumber = row.getAttribute('data-invoice-number');
+            const status = row.getAttribute('data-status');
+
+            const matchesSearch = !searchTerm ||
+                client.includes(searchTerm) ||
+                invoiceNumber.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+
+            const isVisible = matchesSearch && matchesStatus;
+            row.classList.toggle('d-none', !isVisible);
+            if (isVisible) visibleCount++;
+        });
+
+        if (noResultsRow) {
+            noResultsRow.classList.toggle('d-none', visibleCount !== 0);
+        }
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+</script>
+
+<script>
+    async function deleteInvoice(btn) {
+        const invoiceId = btn.getAttribute('data-invoice-id');
+
+        if (!confirm('Delete this invoice? This cannot be undone.')) return;
+
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                alert('Failed to delete invoice');
+                return;
+            }
+
+            window.location.reload();
+        } catch (err) {
+            alert('Network error: ' + err.message);
+        }
+    }
+</script>
+</body>
+</html>

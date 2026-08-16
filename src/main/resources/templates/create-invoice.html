@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Invoice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .item-row { background: #f8fafc; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark" style="background-color:#1e293b;">
+    <div class="container">
+        <a href="/" class="navbar-brand"><i class="bi bi-receipt"></i> InvoicePro</a>
+        <a href="/" class="btn btn-outline-light btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="card p-4">
+        <h4 class="fw-semibold mb-4">Create New Invoice</h4>
+
+        <div id="alertBox" class="alert alert-danger d-none"></div>
+
+        <form id="invoiceForm">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Client</label>
+                    <div class="d-flex gap-2">
+                        <select class="form-select" id="clientId" required>
+                            <option value="">-- Select Client --</option>
+                            <option th:each="client : ${clients}"
+                                    th:value="${client.id}"
+                                    th:text="${client.name}"></option>
+                        </select>
+                        <button type="button" class="btn btn-outline-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#addClientModal">
+                            <i class="bi bi-plus-lg"></i> New
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tax Rate (%)</label>
+                    <input type="number" class="form-control" id="taxRate" value="0" min="0" step="0.01">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Discount (flat ₹)</label>
+                    <input type="number" class="form-control" id="discount" value="0" min="0" step="0.01">
+                </div>
+            </div>
+
+            <hr>
+
+            <h6 class="fw-semibold mb-3">Line Items</h6>
+            <div id="itemsContainer"></div>
+
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-3" onclick="addItemRow()">
+                <i class="bi bi-plus"></i> Add Item
+            </button>
+
+            <hr>
+
+            <div class="text-end mb-3">
+                <div class="fs-5">Subtotal: ₹<span id="previewSubtotal">0.00</span></div>
+                <div class="fs-5">Tax: ₹<span id="previewTax">0.00</span></div>
+                <div class="fs-5">Discount: ₹<span id="previewDiscount">0.00</span></div>
+                <div class="fs-4 fw-bold">Grand Total: ₹<span id="previewGrandTotal">0.00</span></div>
+            </div>
+
+            <button type="submit" class="btn btn-warning fw-semibold px-4">
+                <i class="bi bi-check-circle"></i> Create Invoice
+            </button>
+        </form>
+    </div>
+    <!-- Add Client Modal -->
+    <div class="modal fade" id="addClientModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold">Add New Client</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="clientAlertBox" class="alert alert-danger d-none"></div>
+                    <div class="mb-3">
+                        <label class="form-label">Company / Client Name *</label>
+                        <input type="text" class="form-control" id="newClientName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="newClientEmail">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="newClientPhone" pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile number">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-control" id="newClientAddress">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning fw-semibold" onclick="saveNewClient()">Save Client</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let itemCount = 0;
+async function saveNewClient() {
+const name = document.getElementById('newClientName').value.trim();
+const email = document.getElementById('newClientEmail').value.trim();
+const phone = document.getElementById('newClientPhone').value.trim();
+const address = document.getElementById('newClientAddress').value.trim();
+
+const alertBox = document.getElementById('clientAlertBox');
+alertBox.classList.add('d-none');
+
+if (!name) {
+alertBox.innerText = 'Client name is required';
+alertBox.classList.remove('d-none');
+return;
+}
+
+try {
+const res = await fetch('/api/clients', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ name, email, phone, address })
+});
+
+if (!res.ok) {
+const err = await res.json();
+alertBox.innerText = typeof err.message === 'object'
+? Object.values(err.message).join(', ')
+: (err.message || 'Failed to add client');
+alertBox.classList.remove('d-none');
+return;
+}
+
+const newClient = await res.json();
+
+// Add new client to the dropdown and select it
+const select = document.getElementById('clientId');
+const option = document.createElement('option');
+option.value = newClient.id;
+option.text = newClient.name;
+select.appendChild(option);
+select.value = newClient.id;
+
+// Reset form and close modal
+document.getElementById('newClientName').value = '';
+document.getElementById('newClientEmail').value = '';
+document.getElementById('newClientPhone').value = '';
+document.getElementById('newClientAddress').value = '';
+
+const modal = bootstrap.Modal.getInstance(document.getElementById('addClientModal'));
+modal.hide();
+} catch (err) {
+alertBox.innerText = 'Network error: ' + err.message;
+alertBox.classList.remove('d-none');
+}
+}
+    function addItemRow() {
+        itemCount++;
+        const container = document.getElementById('itemsContainer');
+        const row = document.createElement('div');
+        row.className = 'item-row row g-2 align-items-end';
+        row.id = `item-${itemCount}`;
+        row.innerHTML = `
+            <div class="col-md-5">
+    <label class="form-label small">Description</label>
+    <div class="d-flex gap-1">
+        <input type="text" class="form-control item-desc" required>
+        <button type="button" class="btn btn-outline-primary text-nowrap ai-generate-btn" title="AI Generate from a quick note">
+            <i class="bi bi-stars"></i>
+        </button>
+    </div>
+</div>
+            <div class="col-md-2">
+                <label class="form-label small">Qty</label>
+                <input type="number" class="form-control item-qty" value="1" min="1" oninput="calculateTotals()" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">Unit Price (₹)</label>
+                <input type="number" class="form-control item-price" value="0" min="0" step="0.01" oninput="calculateTotals()" required>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger w-100" onclick="removeItemRow(${itemCount})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+
+// Wire up the AI generate button for this row
+row.querySelector('.ai-generate-btn').addEventListener('click', async function() {
+    const note = prompt("Quick note about this item (e.g. 'logo design 3 revisions'):");
+    if (!note || !note.trim()) return;
+
+    const btn = this;
+    const descInput = row.querySelector('.item-desc');
+    const originalIcon = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/ai/generate-description', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note: note.trim() })
+        });
+
+        if (!res.ok) {
+            alert('AI generation failed. Try again or type manually.');
+            return;
+        }
+
+        const data = await res.json();
+        descInput.value = data.description;
+    } catch (err) {
+        alert('Network error: ' + err.message);
+    } finally {
+        btn.innerHTML = originalIcon;
+        btn.disabled = false;
+    }
+});
+    }
+
+    function removeItemRow(id) {
+        document.getElementById(`item-${id}`).remove();
+        calculateTotals();
+    }
+
+    function calculateTotals() {
+        let subtotal = 0;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            subtotal += qty * price;
+        });
+
+        const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const tax = subtotal * (taxRate / 100);
+        const grandTotal = Math.max(subtotal + tax - discount, 0);
+
+        document.getElementById('previewSubtotal').innerText = subtotal.toFixed(2);
+        document.getElementById('previewTax').innerText = tax.toFixed(2);
+        document.getElementById('previewDiscount').innerText = discount.toFixed(2);
+        document.getElementById('previewGrandTotal').innerText = grandTotal.toFixed(2);
+    }
+
+    document.getElementById('taxRate').addEventListener('input', calculateTotals);
+    document.getElementById('discount').addEventListener('input', calculateTotals);
+
+    // Add one item row by default
+    addItemRow();
+
+    document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const items = [];
+        document.querySelectorAll('.item-row').forEach(row => {
+            items.push({
+                description: row.querySelector('.item-desc').value,
+                quantity: parseInt(row.querySelector('.item-qty').value),
+                unitPrice: parseFloat(row.querySelector('.item-price').value)
+            });
+        });
+
+        const payload = {
+            clientId: parseInt(document.getElementById('clientId').value),
+            taxRate: parseFloat(document.getElementById('taxRate').value) || 0,
+            discount: parseFloat(document.getElementById('discount').value) || 0,
+            items: items
+        };
+
+        const alertBox = document.getElementById('alertBox');
+        alertBox.classList.add('d-none');
+
+        try {
+            const res = await fetch('/api/invoices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alertBox.innerText = typeof err.message === 'object'
+                    ? Object.values(err.message).join(', ')
+                    : (err.message || 'Something went wrong');
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
+            const created = await res.json();
+            window.location.href = `/invoices/${created.id}`;
+        } catch (err) {
+            alertBox.innerText = 'Network error: ' + err.message;
+            alertBox.classList.remove('d-none');
+        }
+    });
+</script>
+
+</body>
+</html>
