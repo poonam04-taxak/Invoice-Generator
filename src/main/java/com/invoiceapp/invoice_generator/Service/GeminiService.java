@@ -11,6 +11,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
+// integrates with Google's Gemini api to turn a short & informal note
+
 @Service
 public class GeminiService {
 
@@ -23,6 +25,7 @@ public class GeminiService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // sends a rough note to Gemini & returns a professional rewrite
     public String generateItemDescription(String rawNote) {
         String prompt = "You are helping write a professional invoice line item description. "
                 + "Given this short note from a freelancer/business: \"" + rawNote + "\", "
@@ -39,6 +42,7 @@ public class GeminiService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // Gemini's current REST API accepts the key via this header rather than a query para
         headers.set("x-goog-api-key", apiKey);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
@@ -58,6 +62,7 @@ public class GeminiService {
 
             return generatedText.trim();
 
+        // catches network failures & rate-limit errors
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate description: " + e.getMessage());
         }
