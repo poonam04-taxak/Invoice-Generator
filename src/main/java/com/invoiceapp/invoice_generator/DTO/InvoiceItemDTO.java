@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
+// represents a single line item as submitted by the client
+
 public class InvoiceItemDTO {
 
     @NotBlank(message = "Item description is required")
