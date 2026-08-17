@@ -2,6 +2,8 @@ package com.invoiceapp.invoice_generator.DTO;
 
 import jakarta.validation.constraints.NotBlank;
 
+// Req body for AI description gen endpoint
+
 public class DescriptionRequestDTO {
 
     @NotBlank(message = "Note is required")
