@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.math.BigDecimal;
 import java.util.List;
 
+//Serves the server-rendered html pages for dashboard & invoice creation form, & invoice detail/print view
+
 @Controller
 public class WebController {
 
@@ -46,12 +48,14 @@ public class WebController {
         return "dashboard";
     }
 
+        // client list to populate the client dropdown
     @GetMapping("/invoices/new")
     public String newInvoiceForm(Model model) {
         model.addAttribute("clients", clientService.getAllClients());
         return "create-invoice";
     }
 
+        //  renders the downloadable invoice detail page for invoice
     @GetMapping("/invoices/{id}")
     public String viewInvoice(@PathVariable Long id, Model model) {
         model.addAttribute("invoice", invoiceService.getInvoiceById(id));
