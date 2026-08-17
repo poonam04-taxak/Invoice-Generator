@@ -2,6 +2,9 @@ package com.invoiceapp.invoice_generator.DTO;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+//  DTO for Client used at api boundary for both
+// incoming requests & outgoing responses
+
 public class ClientDTO {
 
     private Long id;
@@ -12,6 +15,7 @@ public class ClientDTO {
     @Email(message = "Enter a valid email")
     private String email;
 
+    //validated as a 10-digit indian mobile num
     @jakarta.validation.constraints.Pattern(
             regexp = "^[6-9]\\d{9}$",
             message = "Phone number must be a valid 10-digit Indian mobile number"
