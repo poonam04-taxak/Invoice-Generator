@@ -3,6 +3,10 @@ package com.invoiceapp.invoice_generator.DTO;
 import lombok.Data;
 
 import java.math.BigDecimal;
+// unlike InvoiceItemDTO (the create-request version), this includes
+// lineTotal since it reflects the server-calculated result, not raw input
+
+
 @Data
 public class InvoiceItemResponseDTO {
 
