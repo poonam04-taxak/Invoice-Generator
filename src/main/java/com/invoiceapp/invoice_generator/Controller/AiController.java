@@ -10,6 +10,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * exposes AI-assisted features for the invoice generator
+ * supports generating a professional invoice line-item description
+ * from a short, informal note using Google Gemini api
+ */
+
 @RestController
 @RequestMapping("/api/ai")
 public class AiController {
