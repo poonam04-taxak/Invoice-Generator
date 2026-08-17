@@ -10,12 +10,15 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// handles the conversion b/w Client & ClientDTO
+
 @Service
 public class ClientService {
 
     @Autowired
     private ClientRepo clientRepository;
 
+    // creates & persists a new client from validated dto input
     public ClientDTO createClient(ClientDTO dto) {
         Client client = new Client(dto.getName(), dto.getEmail(), dto.getPhone(), dto.getAddress());
         Client saved = clientRepository.save(client);
@@ -29,6 +32,7 @@ public class ClientService {
                 .collect(Collectors.toList());
     }
 
+    // retrieves all clients mapped to DTOs
     public ClientDTO getClientById(Long id) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
@@ -40,6 +44,7 @@ public class ClientService {
                 .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
     }
 
+     // converts a client entity into its API-facing DTO rep
     private ClientDTO toDTO(Client client) {
         ClientDTO dto = new ClientDTO();
         dto.setId(client.getId());
