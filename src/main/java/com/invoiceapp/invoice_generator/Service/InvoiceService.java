@@ -13,6 +13,9 @@ import java.time.Year;
 import java.util.List;
 import java.util.stream.Collectors;
 
+ //core business logic for invoices: creation with full financial calc
+
+
 @Service
 public class InvoiceService {
 
@@ -24,10 +27,10 @@ public class InvoiceService {
 
     public InvoiceResponseDTO createInvoice(InvoiceRequestDTO request) {
 
-        // 1. Fetch the client (throws if not found)
+        // 1. fetch the client (throws if not found)
         Client client = clientService.getClientEntityById(request.getClientId());
 
-        // 2. Build the Invoice shell
+        // 2. build the invoice shell
         Invoice invoice = new Invoice();
         invoice.setClient(client);
         invoice.setInvoiceDate(LocalDate.now());
@@ -37,7 +40,7 @@ public class InvoiceService {
         invoice.setDiscount(request.getDiscount() != null ? request.getDiscount() : BigDecimal.ZERO);
         invoice.setStatus(InvoiceStatus.UNPAID);
 
-        // 3. Build line items and attach to invoice
+        // 3. build line items & attach to invoice
         BigDecimal subtotal = BigDecimal.ZERO;
         for (InvoiceItemDTO itemDTO : request.getItems()) {
             InvoiceItem item = new InvoiceItem();
@@ -57,13 +60,13 @@ public class InvoiceService {
             subtotal = subtotal.add(lineTotal);
         }
 
-        // 4. Calculate tax, discount, grand total
+        // 4. calculate tax, dis, grand total
         subtotal = subtotal.setScale(2, RoundingMode.HALF_UP);
         BigDecimal taxAmount = subtotal
                 .multiply(invoice.getTaxRate())
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        // Guard: discount should never exceed subtotal + tax (avoid negative totals)
+        // discount should never exceed subtotal + tax (avoid negative totals)
         BigDecimal discount = invoice.getDiscount();
         BigDecimal preDiscountTotal = subtotal.add(taxAmount);
         if (discount.compareTo(preDiscountTotal) > 0) {
@@ -77,18 +80,20 @@ public class InvoiceService {
         invoice.setDiscount(discount);
         invoice.setGrandTotal(grandTotal);
 
-        // 5. Save (cascade saves items automatically)
+        // 5. save (cascade saves items automatically)
         Invoice saved = invoiceRepository.save(invoice);
 
         return toResponseDTO(saved);
     }
-
+    
+     //retrieves a single invoice as a DTO, for api responses & the invoice view page
     public InvoiceResponseDTO getInvoiceById(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Invoice not found with id: " + id));
         return toResponseDTO(invoice);
     }
-
+    
+    // retrieves the raw entity
     public Invoice getInvoiceEntityById(Long id) {
         return invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Invoice not found with id: " + id));
@@ -107,7 +112,8 @@ public class InvoiceService {
         invoice.setStatus(status);
         return toResponseDTO(invoiceRepository.save(invoice));
     }
-
+    
+    // permanently deletes an invoice
     public void deleteInvoice(Long id) {
         if (!invoiceRepository.existsById(id)) {
             throw new RuntimeException("Invoice not found with id: " + id);
@@ -115,7 +121,7 @@ public class InvoiceService {
         invoiceRepository.deleteById(id);
     }
 
-    // Generates invoice numbers like INV-2026-0001, sequential per year
+    // generates invoice num like INV-2026-0001, sequential per year
     private String generateInvoiceNumber() {
         int year = Year.now().getValue();
         String maxInvoiceNumber = invoiceRepository.findMaxInvoiceNumberForYear(year);
