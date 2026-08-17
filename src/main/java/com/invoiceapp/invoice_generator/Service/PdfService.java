@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.awt.Color;
 
+// generates a downloadable PDF version of invoice using OpenPDF
+
 @Service
 public class PdfService {
 
@@ -22,13 +24,14 @@ public class PdfService {
             PdfWriter.getInstance(document, out);
             document.open();
 
+        // Font styles used throughout the document
             Font titleFont = new Font(Font.HELVETICA, 22, Font.BOLD, new Color(30, 41, 59));
             Font headingFont = new Font(Font.HELVETICA, 10, Font.BOLD, Color.GRAY);
             Font normalFont = new Font(Font.HELVETICA, 11, Font.NORMAL, Color.BLACK);
             Font boldFont = new Font(Font.HELVETICA, 12, Font.BOLD, Color.BLACK);
             Font grandTotalFont = new Font(Font.HELVETICA, 14, Font.BOLD, new Color(30, 41, 59));
 
-            // --- Header: INVOICE title + invoice number ---
+            // header: INVOICE title + invoice num
             Paragraph title = new Paragraph("INVOICE", titleFont);
             document.add(title);
 
@@ -36,7 +39,7 @@ public class PdfService {
             invoiceNum.setSpacingAfter(20);
             document.add(invoiceNum);
 
-            // --- Billed To + Dates table (2 columns) ---
+            // billed To + Dates table (2 col)
             PdfPTable headerTable = new PdfPTable(2);
             headerTable.setWidthPercentage(100);
             headerTable.setSpacingAfter(20);
@@ -69,7 +72,7 @@ public class PdfService {
 
             document.add(headerTable);
 
-            // --- Line items table ---
+            // line items table
             PdfPTable itemsTable = new PdfPTable(4);
             itemsTable.setWidthPercentage(100);
             itemsTable.setWidths(new float[]{4, 1.2f, 1.8f, 1.8f});
@@ -94,7 +97,7 @@ public class PdfService {
 
             document.add(itemsTable);
 
-            // --- Totals section (right-aligned) ---
+            // Totals section 
             PdfPTable totalsTable = new PdfPTable(2);
             totalsTable.setWidthPercentage(45);
             totalsTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -106,7 +109,7 @@ public class PdfService {
 
             document.add(totalsTable);
 
-            // --- Footer ---
+            // footer
             Paragraph footer = new Paragraph("\n\nThank you for your business!", normalFont);
             footer.setSpacingBefore(30);
             footer.setAlignment(Element.ALIGN_CENTER);
